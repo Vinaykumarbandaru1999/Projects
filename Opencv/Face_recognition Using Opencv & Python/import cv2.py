@@ -3,6 +3,9 @@ import numpy as np
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import tkinter as tk
+from tkinter import ttk
 
 # Load the pre-trained Haar Cascade Classifier for face detection
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
@@ -35,74 +38,82 @@ if len(faces2) == 1:
 # Initialize empty lists to store ROI data
 roi_data = []
 
-# Open a video capture object for the default camera (change the index if needed)
-cap = cv2.VideoCapture(0)
+# Function to start face recognition and display the graph on the GUI
+def start_face_recognition_and_display_graph():
+    global roi_data
 
-frame_count = 0  # Initialize frame count for plotting
+    # Open a video capture object for the default camera (change the index if needed)
+    cap = cv2.VideoCapture(0)
 
-while True:
-    # Read a frame from the camera
-    ret, frame = cap.read()
+    frame_count = 0  # Initialize frame count for plotting
 
-    # Convert the frame to grayscale for face detection
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    while True:
+        # Read a frame from the camera
+        ret, frame = cap.read()
 
-    # Detect faces in the frame
-    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        # Convert the frame to grayscale for face detection
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    for (x, y, w, h) in faces:
-        # Draw a rectangle around the detected face
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # Detect faces in the frame
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-        # Perform face recognition by comparing the detected face with the sample faces
-        detected_face = gray[y:y + h, x:x + w]
-        match_result1 = cv2.matchTemplate(detected_face, face_roi1, cv2.TM_CCOEFF_NORMED)
-        match_result2 = cv2.matchTemplate(detected_face, face_roi2, cv2.TM_CCOEFF_NORMED)
+        for (x, y, w, h) in faces:
+            # Draw a rectangle around the detected face
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        # Append ROI data to the list
-        roi_data.append({
-            'Match Result 1': match_result1[0][0],
-            'Match Result 2': match_result2[0][0],
-        })
+            # Perform face recognition by comparing the detected face with the sample faces
+            detected_face = gray[y:y + h, x:x + w]
+            match_result1 = cv2.matchTemplate(detected_face, face_roi1, cv2.TM_CCOEFF_NORMED)
+            match_result2 = cv2.matchTemplate(detected_face, face_roi2, cv2.TM_CCOEFF_NORMED)
 
-    # Display the frame with detected faces and recognition results
-    cv2.imshow('Face Recognition', frame)
+            # Append ROI data to the list
+            roi_data.append({
+                'Match Result 1': match_result1[0][0],
+                'Match Result 2': match_result2[0][0],
+            })
 
-    # Check if any key is pressed (wait for a key press for 1 millisecond)
-    key = cv2.waitKey(1)
+        # Display the frame with detected faces and recognition results
+        cv2.imshow('Face Recognition', frame)
 
-    # If any key is pressed, break out of the loop
-    if key != -1:
-        break
+        # Check if any key is pressed (wait for a key press for 1 millisecond)
+        key = cv2.waitKey(1)
 
-    frame_count += 1  # Increment frame count
+        # If any key is pressed, break out of the loop
+        if key != -1:
+            break
 
-# Release the camera and close all OpenCV windows
-cap.release()
-cv2.destroyAllWindows()
+        frame_count += 1  # Increment frame count
 
-# Create a DataFrame from the ROI data
-df = pd.DataFrame(roi_data)
+    # Release the camera and close all OpenCV windows
+    cap.release()
+    cv2.destroyAllWindows()
 
-# Export the DataFrame to an Excel file
-df.to_excel('/Users/bandaruvinaykumar/Desktop/Projects/Projects/Opencv/Face_recognition Using Opencv & Python/Graphs/roi_data.xlsx', index=False)
+    # Create a DataFrame from the ROI data
+    df = pd.DataFrame(roi_data)
 
-# Create a graph from the ROI data
-frame_count = min(frame_count, len(df['Match Result 1']))  # Ensure frame_count and DataFrame lengths match
-plt.figure(figsize=(10, 6))
-plt.plot(range(frame_count), df['Match Result 1'][:frame_count], label='Match Result 1')
-plt.plot(range(frame_count), df['Match Result 2'][:frame_count], label='Match Result 2')
-plt.xlabel('Frame')
-plt.ylabel('Match Result')
-plt.title('Face Recognition Match Results Over Time')
-plt.legend()
-plt.grid(True)
+    # Create a graph from the ROI data
+    frame_count = min(frame_count, len(df['Match Result 1']))  # Ensure frame_count and DataFrame lengths match
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(range(frame_count), df['Match Result 1'][:frame_count], label='Match Result 1')
+    ax.plot(range(frame_count), df['Match Result 2'][:frame_count], label='Match Result 2')
+    ax.set_xlabel('Frame')
+    ax.set_ylabel('Match Result')
+    ax.set_title('Face Recognition Match Results Over Time')
+    ax.legend()
+    ax.grid(True)
 
-# Specify the path where you want to save the graph
-graph_save_path = '/Users/bandaruvinaykumar/Desktop/Projects/Projects/Opencv/Face_recognition Using Opencv & Python/Graphs/face_recognition_graph.png'
+    # Embed the graph in the Tkinter window
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack()
 
-# Save the graph to the specified path
-plt.savefig(graph_save_path)
+# Create the main application window
+root = tk.Tk()
+root.title("Face Recognition GUI")
 
-# Display the graph
-plt.show()
+# Create a "Start" button
+start_button = ttk.Button(root, text="Start Face Recognition", command=start_face_recognition_and_display_graph)
+start_button.pack()
+
+# Start the Tkinter main loop
+root.mainloop()
