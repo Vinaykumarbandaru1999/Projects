@@ -6,13 +6,14 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from tkinter import ttk
+from PIL import Image, ImageTk
 
 # Load the pre-trained Haar Cascade Classifier for face detection
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 
-# Get the absolute paths to the sample images
-sample_image1_path = os.path.abspath('/Users/bandaruvinaykumar/Desktop/Projects/Projects/Opencv/Face_recognition Using Opencv & Python/Faces/Vinay.jpg')
-sample_image2_path = os.path.abspath('/Users/bandaruvinaykumar/Desktop/Projects/Projects/Opencv/Face_recognition Using Opencv & Python/Faces/Abdul_Kalam.jpg')
+# Get the absolute paths to the sample images (replace with your actual file paths)
+sample_image1_path = '/Users/bandaruvinaykumar/Desktop/Projects/Projects/Opencv/Face_recognition Using Opencv & Python/Faces/Vinay.jpg'
+sample_image2_path = '/Users/bandaruvinaykumar/Desktop/Projects/Projects/Opencv/Face_recognition Using Opencv & Python/Faces/Abdul_Kalam.jpg'
 
 # Load the sample images
 sample_image1 = cv2.imread(sample_image1_path)
@@ -21,6 +22,11 @@ sample_image2 = cv2.imread(sample_image2_path)
 # Convert sample images to grayscale
 sample_image1_gray = cv2.cvtColor(sample_image1, cv2.COLOR_BGR2GRAY)
 sample_image2_gray = cv2.cvtColor(sample_image2, cv2.COLOR_BGR2GRAY)
+
+# Resize the sample images to the same size (adjust the dimensions as needed)
+desired_size = (400, 400)
+sample_image1 = cv2.resize(sample_image1, desired_size)
+sample_image2 = cv2.resize(sample_image2, desired_size)
 
 # Detect faces in sample images
 faces1 = face_cascade.detectMultiScale(sample_image1_gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
@@ -105,15 +111,40 @@ def start_face_recognition_and_display_graph():
     # Embed the graph in the Tkinter window
     canvas = FigureCanvasTkAgg(fig, master=root)
     canvas_widget = canvas.get_tk_widget()
-    canvas_widget.pack()
+    canvas_widget.grid(row=2, column=0, columnspan=2)
 
 # Create the main application window
 root = tk.Tk()
 root.title("Face Recognition GUI")
 
-# Create a "Start" button
-start_button = ttk.Button(root, text="Start Face Recognition", command=start_face_recognition_and_display_graph)
+# Create a frame for the "Start" button and place it at the top center
+button_frame = tk.Frame(root)
+button_frame.grid(row=0, column=0, columnspan=2)
+
+# Create a "Start" button and place it in the button frame
+start_button = ttk.Button(button_frame, text="Start Face Recognition", command=start_face_recognition_and_display_graph)
 start_button.pack()
+
+# Create frames for displaying the sample images
+sample_image_frame1 = tk.Frame(root)
+sample_image_frame2 = tk.Frame(root)
+sample_image_frame1.grid(row=1, column=0)
+sample_image_frame2.grid(row=1, column=1)
+
+# Function to convert OpenCV image to PhotoImage format for displaying in Tkinter
+def cv2_to_photoimage(cv_image):
+    img = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
+    img = img.resize(desired_size)  # Resize the image
+    imgtk = ImageTk.PhotoImage(image=img)
+    return imgtk
+
+# Convert the sample images to PhotoImage format
+sample_image1_photo = cv2_to_photoimage(sample_image1)
+sample_image2_photo = cv2_to_photoimage(sample_image2)
+
+# Display the sample images in the respective frames
+tk.Label(sample_image_frame1, image=sample_image1_photo).pack()
+tk.Label(sample_image_frame2, image=sample_image2_photo).pack()
 
 # Start the Tkinter main loop
 root.mainloop()
